@@ -1,43 +1,48 @@
 <?php
 header('Content-Type: application/json');
 
-$keyDataFile = 'keyData.json';
-$keyData = file_exists($keyDataFile) ? json_decode(file_get_contents($keyDataFile), true) : [];
+$keysFile = 'keys.json';  // Đường dẫn tới file keys.json lưu trên server
+$input = json_decode(file_get_contents('php://input'), true);
 
-// Nhận dữ liệu từ Roblox
-$key = $_POST['key'] ?? '';
-$hwid = $_POST['hwid'] ?? '';
-$username = $_POST['username'] ?? '';
-
-if (!$key || !$hwid || !$username) {
-    die(json_encode(['status' => 'error', 'message' => 'Thiếu thông tin']));
+if (!isset($input['userId']) || !isset($input['key'])) {
+    echo json_encode(['success' => false, 'message' => 'Thiếu thông tin']);
+    exit;
 }
 
-if (!isset($keyData[$key])) {
-    die(json_encode(['status' => 'error', 'message' => 'Key không tồn tại']));
+$userId = $input['userId'];
+$key = $input['key'];
+
+// Đọc danh sách key hiện có
+if (!file_exists($keysFile)) {
+    echo json_encode(['success' => false, 'message' => 'Không tìm thấy dữ liệu key']);
+    exit;
 }
 
-$keyInfo = &$keyData[$key]
+$keys = json_decode(file_get_contents($keysFile), true);
 
--- Nếu key chưa có chủ (reset rồi hoặc mới), lưu chủ mới
-if (empty($keyInfo['owner'])) {
-    $keyInfo['owner'] = $username
-    $keyInfo['hwid'] = $hwid
-    saveData($keyDataFile, $keyData)
-    die(json_encode(['status' => 'success', 'message' => 'Key hợp lệ và đã liên kết']))
-end
+$found = false;
 
--- Nếu key có chủ, kiểm tra chủ và HWID
-if ($keyInfo['owner'] ~= $username) {
-    die(json_encode(['status' => 'error', 'message' => 'Key đã liên kết với người khác']))
-end
+foreach ($keys as &$k) {
+    if ($k['key'] === $key) {
+        $found = true;
 
-if ($keyInfo['hwid'] ~= $hwid) {
-    die(json_encode(['status' => 'error', 'message' => 'Key đã khóa với máy khác']))
-end
+        if ($k['used']) {
+            echo json_encode(['success' => false, 'message' => 'Key đã sử dụng']);
+            exit;
+        }
 
-echo json_encode(['status' => 'success', 'message' => 'Key hợp lệ'])
+        // Đánh dấu key đã dùng
+        $k['used'] = true;
+        $k['usedBy'] = $userId;
 
-function saveData(file, data)
-    file_put_contents(file, json_encode(data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
-end
+        file_put_contents($keysFile, json_encode($keys, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        echo json_encode(['success' => true, 'message' => 'Key hợp lệ']);
+        exit;
+    }
+}
+
+if (!$found) {
+    echo json_encode(['success' => false, 'message' => 'Key không tồn tại']);
+    exit;
+}
