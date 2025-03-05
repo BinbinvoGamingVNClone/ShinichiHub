@@ -1,48 +1,24 @@
 <?php
 header('Content-Type: application/json');
 
-$keysFile = 'keys.json';  // Đường dẫn tới file keys.json lưu trên server
-$input = json_decode(file_get_contents('php://input'), true);
+$keyDataFile = 'keyData.json';
 
-if (!isset($input['userId']) || !isset($input['key'])) {
-    echo json_encode(['success' => false, 'message' => 'Thiếu thông tin']);
+// Đọc dữ liệu key
+$keyData = file_exists($keyDataFile) ? json_decode(file_get_contents($keyDataFile), true) : [];
+
+$userID = $_GET['userid'] ?? null;
+$key = $_GET['key'] ?? null;
+
+if (!$userID || !$key) {
+    echo json_encode(["status" => "error", "message" => "Thiếu UserID hoặc Key"]);
     exit;
 }
 
-$userId = $input['userId'];
-$key = $input['key'];
-
-// Đọc danh sách key hiện có
-if (!file_exists($keysFile)) {
-    echo json_encode(['success' => false, 'message' => 'Không tìm thấy dữ liệu key']);
+// Kiểm tra Key có hợp lệ không
+if (!isset($keyData[$userID]) || $keyData[$userID]['key'] !== $key) {
+    echo json_encode(["status" => "error", "message" => "Key không hợp lệ hoặc không khớp UserID"]);
     exit;
 }
 
-$keys = json_decode(file_get_contents($keysFile), true);
-
-$found = false;
-
-foreach ($keys as &$k) {
-    if ($k['key'] === $key) {
-        $found = true;
-
-        if ($k['used']) {
-            echo json_encode(['success' => false, 'message' => 'Key đã sử dụng']);
-            exit;
-        }
-
-        // Đánh dấu key đã dùng
-        $k['used'] = true;
-        $k['usedBy'] = $userId;
-
-        file_put_contents($keysFile, json_encode($keys, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-        echo json_encode(['success' => true, 'message' => 'Key hợp lệ']);
-        exit;
-    }
-}
-
-if (!$found) {
-    echo json_encode(['success' => false, 'message' => 'Key không tồn tại']);
-    exit;
-}
+// Key hợp lệ, có thể thêm logic check "đã dùng hay chưa"
+echo json_encode(["status" => "success", "message" => "Key hợp lệ"]);
