@@ -5,7 +5,7 @@ $keyFile = 'keyData.json';
 $logFile = 'verify_log.json';
 
 if (!file_exists($keyFile)) {
-    echo json_encode(["status" => "error", "message" => "Không tìm thấy dữ liệu key."]);
+    echo json_encode(["status" => "error", "message" => "Failed To Search Key."]);
     exit;
 }
 
@@ -13,14 +13,14 @@ $keyData = json_decode(file_get_contents($keyFile), true);
 $inputKey = isset($_POST['key']) ? trim($_POST['key']) : '';
 
 if (!$inputKey) {
-    echo json_encode(["status" => "error", "message" => "Vui lòng nhập key để xác minh."]);
+    echo json_encode(["status" => "error", "message" => "Input Key To Verify."]);
     exit;
 }
 
 $userId = array_search($inputKey, array_column($keyData, 'key'));
 
 if ($userId === false) {
-    echo json_encode(["status" => "error", "message" => "Key không hợp lệ hoặc chưa được cấp."]);
+    echo json_encode(["status" => "error", "message" => "Key Not Vaild Or Key Not Found."]);
     exit;
 }
 
