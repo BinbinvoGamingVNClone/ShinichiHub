@@ -24,10 +24,10 @@ $db = json_decode(file_get_contents($databaseFile), true);
 
 // Kiểm tra HWID có tồn tại hay không
 if (isset($db[$userHWID]) && $db[$userHWID] !== "") {
-    echo json_encode(["status" => "success", "message" => "HWID hợp lệ"]);
+    echo json_encode(["status" => "success", "message" => "Vaild HWID!"]);
     exit;
 }
 
-echo json_encode(["status" => "error", "message" => "HWID không hợp lệ"]);
+echo json_encode(["status" => "error", "message" => "Hwid Wrong"]);
 exit;
 ?>
